@@ -1,0 +1,22 @@
+# Dependencies
+node_modules
+
+# yarn error logs
+yarn-error.log
+
+# Environment varibales
+.env*
+!.env*.example
+
+# Code coverage
+coverage
+
+# babel out-dir
+dist
+
+# vs-code dir
+.vscode
+<<<<<<< Updated upstream
+.qodo
+=======
+>>>>>>> Stashed changes

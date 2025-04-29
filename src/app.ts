@@ -5,7 +5,7 @@ import mongoSanitize from 'express-mongo-sanitize';
 import passport from 'passport';
 import httpStatus from 'http-status';
 import ApiError from './utils/ApiError';
-
+import appRouter from './routes/index';
 const app = express();
 
 
@@ -32,7 +32,7 @@ app.use(passport.initialize() as unknown as RequestHandler);
 
 
 
-
+app.use('/',appRouter);
 // send back a 404 error for any unknown api request
 app.use((_req, _res, next) => {
   next(new ApiError(httpStatus.NOT_FOUND, 'Not found'));

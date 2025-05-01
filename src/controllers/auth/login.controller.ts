@@ -1,47 +1,45 @@
-// controllers/authController.ts
 import jwt from 'jsonwebtoken';
 import { Request, Response } from 'express';
 import User from '../../models/User.model';
 import catchAsync from '../../utils/catchAsync';
+import config from '../../config/config';
 
 export const login = catchAsync(async (req: Request, res: Response): Promise<void> => {
-  try {
-    const { fullName, password } = req.body;
+  const { fullName, password } = req.body;
 
-    // پیدا کردن کاربر از پایگاه داده
-    const user = await User.findOne({ fullName });
-    if (!user) {
-      res.status(404).json({ message: 'کاربر یافت نشد.' });
-      return;
-    }
-
-    // مقایسه رمز عبور
-    const isMatch = await user.comparePassword(password);
-    if (!isMatch) {
-      res.status(400).json({ message: 'رمز عبور اشتباه است.' });
-      return;
-    }
-
-    // ایجاد توکن JWT
-    const token = jwt.sign(
-      { id: user._id, role: user.role },
-      process.env.JWT_SECRET || 'mysecret',
-      { expiresIn: '7d' } // توکن معتبر برای 7 روز
-    );
-
-    // ارسال اطلاعات کاربر و توکن
-    res.status(200).json({
-      message: 'ورود موفق.',
-      token,  // توکن JWT
-      user: { // ارسال اطلاعات کاربر
-        fullName: user.fullName,
-        fieldOfStudy: user.fieldOfStudy,
-        role: user.role,
-        profileImage: user.profileImage,
-        teams: user.teams,
-      },
-    });
-  } catch (error) {
-    res.status(500).json({ message: 'خطایی رخ داد.', error });
+  if (!fullName || !password) {
+    res.status(400).json({ message: 'نام و رمز عبور الزامی است.' });
+    return;
   }
+
+  // یافتن کاربر و انتخاب رمز عبور برای مقایسه
+  const user = await User.findOne({ fullName }).select('+password');
+  if (!user) {
+    res.status(404).json({ message: 'کاربری با این نام یافت نشد.' });
+    return;
+  }
+
+  // مقایسه رمز عبور
+  const isMatch = await user.comparePassword(password);
+  if (!isMatch) {
+    res.status(400).json({ message: 'رمز عبور نادرست است.' });
+    return;
+  }
+
+  // ساخت توکن JWT
+  const token = jwt.sign(
+    { id: user._id, role: user.role },
+    config.jwt.secret,
+    { expiresIn: `${config.jwt.accessExpirationMinutes}m` }
+  );
+
+  // حذف رمز عبور از خروجی
+  const { password: _, ...userWithoutPassword } = user.toObject();
+
+  // پاسخ نهایی
+  res.status(200).json({
+    message: 'ورود موفقیت‌آمیز بود.',
+    token,
+    user: userWithoutPassword,
+  });
 });

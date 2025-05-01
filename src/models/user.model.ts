@@ -1,50 +1,38 @@
-import mongoose, { Schema, Document } from 'mongoose';
-import bcrypt from 'bcrypt';
-
-export interface IWorkExperience {
-  company: string;
-  position: string;
-  skillsUsed: string[];
-}
+import { Document, Schema, model } from 'mongoose';
+import bcrypt from 'bcryptjs';
 
 export interface IUser extends Document {
   fullName: string;
-  fieldOfStudy: string;
-  skills: string[];
-  workExperiences: IWorkExperience[];
-  role: 'admin' | 'team_leader' | 'member' | 'forum_leader';
-  profileImage?: string;
-  teams: mongoose.Types.ObjectId[];
   password: string;
-  comparePassword(candidate: string): Promise<boolean>;
+  fieldOfStudy?: string;
+  skills?: string[];
+  profileImage?: string;
+  role: 'user' | 'admin';
+  comparePassword: (candidatePassword: string) => Promise<boolean>;
 }
 
 const UserSchema = new Schema<IUser>({
-  fullName: { type: String, required: true },
-  fieldOfStudy: { type: String },
-  skills: [{ type: String }],
-  workExperiences: [{
-    company: String,
-    position: String,
-    skillsUsed: [String]
-  }],
-  role: { type: String, enum: ['admin', 'team_leader', 'member', 'forum_leader'], default: 'member' },
+  fullName: { type: String, required: true, unique: true },
+  password: { type: String, required: true, select: false },
+  fieldOfStudy: String,
+  skills: [String],
   profileImage: String,
-  teams: [{ type: Schema.Types.ObjectId, ref: 'Team' }],
-  password: { type: String, required: true, minlength: 6 }
+  role: { type: String, enum: ['user', 'admin'], default: 'user' },
 }, { timestamps: true });
 
-// هش کردن رمز عبور قبل از ذخیره
-UserSchema.pre('save', async function (next) {
-  const user = this as IUser;
-  if (!user.isModified('password')) return next();
-  user.password = await bcrypt.hash(user.password, 10);
+// رمزنگاری پیش از ذخیره
+UserSchema.pre<IUser>('save', async function (next) {
+  if (!this.isModified('password')) return next();
+  this.password = await bcrypt.hash(this.password, 10);
   next();
 });
 
-// متد برای مقایسه رمز عبور
-UserSchema.methods.comparePassword = function (candidate: string): Promise<boolean> {
-  return bcrypt.compare(candidate, this.password);
+// متد مقایسه رمز عبور
+UserSchema.methods.comparePassword = async function (
+  this: IUser,
+  candidatePassword: string
+): Promise<boolean> {
+  return bcrypt.compare(candidatePassword, this.password);
 };
 
-export default mongoose.model<IUser>('User', UserSchema);
+export default model<IUser>('User', UserSchema);

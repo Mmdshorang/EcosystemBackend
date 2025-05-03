@@ -1,7 +1,8 @@
 import mongoose, { Schema, Document } from "mongoose";
+import { IUser } from "./User.model";
 
 export interface ITeamMember extends Document {
-  user: mongoose.Types.ObjectId;
+  user: IUser; 
   team: mongoose.Types.ObjectId;
   role: 'member' | 'leader';
   joined_at: Date;

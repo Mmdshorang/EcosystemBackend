@@ -5,7 +5,7 @@ export interface ISkill extends Document {
 }
 
 const SkillSchema = new Schema<ISkill>({
-  title: { type: String, required: true }
+  title: { type: String, required: true, unique: true }
 });
 
 export default mongoose.model<ISkill>('Skill', SkillSchema);

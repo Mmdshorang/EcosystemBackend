@@ -2,7 +2,7 @@
 import { NextFunction, Request, Response } from 'express';
 import catchAsync from '../utils/catchAsync';
 import TeamModel from '../models/Team.model';
-import TeamMemberModel from '../models/TeamMember.model.';
+import TeamMemberModel from '../models/TeamMember.model';
 import { IUser } from '../models/User.model';
 import ApiError from '../utils/ApiError';
 
@@ -121,3 +121,34 @@ export const getTeamMembers = catchAsync(async (req: Request, res: Response) => 
 
   res.status(200).json({ members });
 });
+export const deleteTeam = async (req: Request, res: Response, next: NextFunction) => {
+    try {
+      const userId = (req.user as { id: string }).id;
+      const { teamId } = req.body;
+  
+      if (!teamId) {
+         res.status(400).json({ message: 'شناسه تیم الزامی است.' });
+      }
+  
+      // بررسی اینکه آیا کاربر لیدر این تیم است
+      const isLeader = await TeamMemberModel.findOne({
+        user: userId,
+        team: teamId,
+        role: 'leader',
+      });
+  
+      if (!isLeader) {
+         res.status(403).json({ message: 'فقط لیدر تیم می‌تواند آن را حذف کند.' });
+      }
+  
+      // حذف اعضا
+      await TeamMemberModel.deleteMany({ team: teamId });
+  
+      // حذف خود تیم
+      await TeamModel.findByIdAndDelete(teamId);
+  
+      res.status(200).json({ message: 'تیم با موفقیت حذف شد.' });
+    } catch (err) {
+      next(err);
+    }
+  };

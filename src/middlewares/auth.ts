@@ -1,49 +1,32 @@
-import passport from 'passport';
-import httpStatus from 'http-status';
-import { Request, Response } from 'express-serve-static-core';
-import { NextFunction, RequestHandler } from 'express';
-import ApiError from '../utils/ApiError';
-import { IUser } from '../models/User.model';
-import { roleRights } from '../config/roles';
+import { Request, Response, NextFunction } from 'express';
+import jwt from 'jsonwebtoken';
 
-
-// eslint-disable-next-line @typescript-eslint/no-explicit-any
-export type AuthenticateCallback = (err?: any, user?: IUser, info?: any) => Promise<void>;
-
-/* eslint-disable @typescript-eslint/no-explicit-any, no-unused-vars */
-const verifyCallback = (
-  req: Request,
-  resolve: (value: void | PromiseLike<void>) => void,
-  reject: (reason?: any) => void,
-  requiredRights: string[]
-): AuthenticateCallback => {
-  /* eslint-enable @typescript-eslint/no-explicit-any, no-unused-vars */
-  // eslint-disable-next-line @typescript-eslint/no-explicit-any
-  return async (err?: any, user?: IUser, info?: any): Promise<void> => {
-    if (err || info || !user) {
-      return reject(new ApiError(httpStatus.UNAUTHORIZED, 'Please authenticate'));
-    }
-    req.user = user;
-    if (requiredRights.length) {
-      const userRights = roleRights.get(user.role);
-      const hasRequiredRights = userRights && requiredRights.every((requiredRight) => userRights.includes(requiredRight));
-      if (!hasRequiredRights && req.params.userId !== user.id) {
-        return reject(new ApiError(httpStatus.FORBIDDEN, 'Forbidden'));
-      }
-    }
-    resolve();
+interface JwtPayload {
+  user: {
+    id: string;
+    role: string;
   };
+}
+
+// ۱. نوع خروجی تابع را به صراحت void تعریف می‌کنیم
+export const protect = (req: Request, res: Response, next: NextFunction): void => {
+  const token = req.header('Authorization');
+
+  if (!token || !token.startsWith('Bearer ')) {
+    // ۲. ابتدا پاسخ را ارسال کرده و سپس با return خالی خارج می‌شویم
+    res.status(401).json({ msg: 'عدم دسترسی، توکن نامعتبر است' });
+    return;
+  }
+
+  try {
+    const tokenValue = token.split(' ')[1];
+    const decoded = jwt.verify(tokenValue, process.env.JWT_SECRET as string) as JwtPayload;
+    
+    req.user = decoded.user;
+    next();
+  } catch (err) {
+    // ۲. اصلاح این بخش هم به همین صورت
+    res.status(401).json({ msg: 'توکن معتبر نیست' });
+    return;
+  }
 };
-
-
-const auth =
-  (...requiredRights: string[]): RequestHandler =>
-  async (req: Request, res: Response, next: NextFunction): Promise<void> => {
-    return new Promise<void>((resolve, reject) => {
-      passport.authenticate('jwt', { session: false }, verifyCallback(req, resolve, reject, requiredRights))(req, res, next);
-    })
-      .then(() => next())
-      .catch((err) => next(err));
-  };
-
-export default auth;

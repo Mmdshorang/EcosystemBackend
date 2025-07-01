@@ -1,38 +1,27 @@
-import { Document, Schema, model } from 'mongoose';
-import bcrypt from 'bcryptjs';
+import mongoose, { Document, Schema, Model } from 'mongoose';
 
+// ۱. تعریف اینترفیس برای تعیین نوع داده‌های کاربر
 export interface IUser extends Document {
-  fullName: string;
+  username: string;
+  email: string;
   password: string;
-  fieldOfStudy?: string;
-  skills?: string[];
-  profileImage?: string;
-  role: 'user' | 'admin';
-  comparePassword: (candidatePassword: string) => Promise<boolean>;
+  role: 'user' | 'team_lead' | 'association_manager' | 'admin';
+  profile: mongoose.Types.ObjectId;
 }
 
-const UserSchema = new Schema<IUser>({
-  fullName: { type: String, required: true, unique: true },
-  password: { type: String, required: true, select: false },
-  fieldOfStudy: String,
-  skills: [String],
-  profileImage: String,
-  role: { type: String, enum: ['user', 'admin'], default: 'user' },
+// ۲. تعریف Schema با استفاده از اینترفیس
+const UserSchema: Schema<IUser> = new Schema({
+  username: { type: String, required: true, unique: true, trim: true },
+  email: { type: String, required: true, unique: true, trim: true },
+  password: { type: String, required: true },
+  role: {
+    type: String,
+    enum: ['user', 'team_lead', 'association_manager', 'admin'],
+    default: 'user'
+  },
+  profile: { type: Schema.Types.ObjectId, ref: 'Profile' }
 }, { timestamps: true });
 
-// رمزنگاری پیش از ذخیره
-UserSchema.pre<IUser>('save', async function (next) {
-  if (!this.isModified('password')) return next();
-  this.password = await bcrypt.hash(this.password, 10);
-  next();
-});
-
-// متد مقایسه رمز عبور
-UserSchema.methods.comparePassword = async function (
-  this: IUser,
-  candidatePassword: string
-): Promise<boolean> {
-  return bcrypt.compare(candidatePassword, this.password);
-};
-
-export default model<IUser>('User', UserSchema);
+// ۳. ساخت و خروجی گرفتن مدل
+const User: Model<IUser> = mongoose.model<IUser>('User', UserSchema);
+export default User;

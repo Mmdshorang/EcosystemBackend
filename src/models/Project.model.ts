@@ -1,19 +1,22 @@
-import mongoose, { Schema, Document } from 'mongoose';
+import mongoose from 'mongoose';
 
-export interface IProject extends Document {
-  title: string;
-  description?: string;
-  image?: string;
-  link?: string;
-  team: mongoose.Types.ObjectId;
-}
-
-const ProjectSchema = new Schema<IProject>({
+const ProjectSchema = new mongoose.Schema({
   title: { type: String, required: true },
-  description: String,
-  image: String,
-  link: String,
-  team: { type: Schema.Types.ObjectId, ref: 'Team', required: true }
+  description: { type: String, required: true },
+  image: { type: String }, // تصویر اصلی پروژه
+  link: { type: String }, // لینک به پروژه (مثلا GitHub یا سایت دمو)
+  team: { type: mongoose.Schema.Types.ObjectId, ref: 'Team', required: true },
+  tags: [{ type: String, trim: true }],
+  status: {
+    type: String,
+    enum: ['In Progress', 'Completed', 'Archived'],
+    default: 'In Progress'
+  },
+  comments: [{ type: mongoose.Schema.Types.ObjectId, ref: 'Comment' }],
+  likes: [{ type: mongoose.Schema.Types.ObjectId, ref: 'User' }]
 }, { timestamps: true });
 
-export default mongoose.model<IProject>('Project', ProjectSchema);
+// برای جستجوی بهتر، می‌توان روی عنوان و تگ‌ها ایندکس گذاشت
+ProjectSchema.index({ title: 'text', tags: 'text' });
+
+export default mongoose.model('Project', ProjectSchema);

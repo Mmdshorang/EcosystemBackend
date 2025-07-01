@@ -3,9 +3,10 @@ import helmet from 'helmet';
 import cors from 'cors';
 import mongoSanitize from 'express-mongo-sanitize';
 import passport from 'passport';
-import httpStatus from 'http-status';
-import ApiError from './utils/ApiError';
-import appRouter from './routes/index';
+
+import authRoutes from './routes/auth';
+import profileRoutes from './routes/profile'; // <-- این خط را اضافه کنید
+
 const app = express();
 
 
@@ -32,10 +33,12 @@ app.use(passport.initialize() as unknown as RequestHandler);
 
 
 
-app.use('/',appRouter);
+
+app.use('/api/auth', authRoutes);
+
+app.use('/api/profiles', profileRoutes); // <-- این خط را اضافه کنید
+
 // send back a 404 error for any unknown api request
-app.use((_req, _res, next) => {
-  next(new ApiError(httpStatus.NOT_FOUND, 'Not found'));
-});
+
 
 export default app;

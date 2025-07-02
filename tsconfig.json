@@ -23,8 +23,9 @@
     "sourceMap": true,
     "strict": true,
     "strictFunctionTypes": true,
-    "strictNullChecks": true
+    "strictNullChecks": true,
+    
   },
-  "include": ["src/**/*.ts", "initCollections.ts"],
+ "include": ["src/**/*.ts", "types/**/*.ts"],
   "exclude": ["node_modules", "**/*.spec.ts"]
 }

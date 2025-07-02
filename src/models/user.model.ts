@@ -1,6 +1,5 @@
 import mongoose, { Document, Schema, Model } from 'mongoose';
 
-// ۱. تعریف اینترفیس برای تعیین نوع داده‌های کاربر
 export interface IUser extends Document {
   username: string;
   email: string;
@@ -9,7 +8,6 @@ export interface IUser extends Document {
   profile: mongoose.Types.ObjectId;
 }
 
-// ۲. تعریف Schema با استفاده از اینترفیس
 const UserSchema: Schema<IUser> = new Schema({
   username: { type: String, required: true, unique: true, trim: true },
   email: { type: String, required: true, unique: true, trim: true },

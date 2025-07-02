@@ -5,9 +5,23 @@ import mongoSanitize from 'express-mongo-sanitize';
 import passport from 'passport';
 
 import authRoutes from './routes/auth';
-import profileRoutes from './routes/profile'; // <-- این خط را اضافه کنید
+import profileRoutes from './routes/profile'; 
 
 const app = express();
+
+// log all incoming requests
+app.use((req, res, next) => {
+  console.log(`[${new Date().toISOString()}] ${req.method} ${req.originalUrl}`);
+  
+  if (req.body && Object.keys(req.body).length > 0) {
+    console.log('Body:', req.body);
+  }
+  if (req.query && Object.keys(req.query).length > 0) {
+    console.log('Query:', req.query);
+  }
+
+  next();
+});
 
 
 // set security HTTP headers

@@ -14,7 +14,15 @@ export interface JwtPayload {
 declare global {
   namespace Express {
     interface Request {
-      user?: JwtPayload['user'];
+      // This OVERRIDES any existing 'user' type from other libraries (like Passport)
+      // and sets it to the shape of our JWT payload.
+      user?: {
+        id: string;
+        role: string;
+      };
+
+      // This adds the custom property for handling file upload errors from multer.
+      fileValidationError?: string;
     }
   }
 }

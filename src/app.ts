@@ -6,6 +6,9 @@ import passport from 'passport';
 
 import authRoutes from './routes/auth';
 import profileRoutes from './routes/profile'; 
+import uploadRoutes from './routes/upload.routes'; 
+
+import path from 'path';
 
 const app = express();
 
@@ -36,21 +39,17 @@ app.use(express.urlencoded({ extended: true }));
 // sanitize request data
 app.use(mongoSanitize());
 
-// gzip compression
-
-
-// enable cors for any route
 app.use(cors());
 
 // jwt authentication
 app.use(passport.initialize() as unknown as RequestHandler);
 
 
-
-
+app.use(express.static(path.join(__dirname, 'public')));
+app.use('/api/upload', uploadRoutes);
 app.use('/api/auth', authRoutes);
 
-app.use('/api/profiles', profileRoutes); // <-- این خط را اضافه کنید
+app.use('/api/profiles', profileRoutes); 
 
 // send back a 404 error for any unknown api request
 

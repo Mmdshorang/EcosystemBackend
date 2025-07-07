@@ -16,25 +16,24 @@ export const getMyProfile = async (req: Request, res: Response) => {
     const profile = await Profile.findOne({ user: user?.id });
 
     if (!profile) {
-      res.status(404).json({ success: false, message: 'پروفایلی برای این کاربر یافت نشد.' });
+      res.status(200).json({ success: 'error', message: 'پروفایلی برای این کاربر یافت نشد.' });
       return;
     }
 
-    res.status(200).json({ success: true, data: profile });
+    res.status(200).json({ success: 'success', data: profile });
   } catch (err) {
     console.error((err as Error).message);
-    res.status(500).json({ success: false, message: 'خطای سرور' });
+    res.status(200).json({ success: 'error', message: 'خطای سرور' });
   }
 };
 
 export const updateMyProfile = async (req: Request, res: Response) => {
   const errors = validationResult(req);
   if (!errors.isEmpty()) {
-    res.status(400).json({ success: false, message: 'خطاهای اعتبارسنجی', errors: errors.array() });
+    res.status(400).json({ success: 'error', message: 'خطاهای اعتبارسنجی', errors: errors.array() });
     return;
   }
 
-  // در اینجا هم همان کار را تکرار کنید
   const user = req.user as UserPayload;
 
   const { fullName, avatar, fieldOfStudy, bio, skills, workExperience, socialLinks } = req.body;
@@ -57,9 +56,9 @@ export const updateMyProfile = async (req: Request, res: Response) => {
       { new: true, upsert: true, setDefaultsOnInsert: true },
     ).populate('user', ['username', 'email']);
 
-    res.status(200).json({ success: true, message: 'پروفایل با موفقیت به‌روزرسانی شد.', data: profile });
+    res.status(200).json({ success: 'success', message: 'پروفایل با موفقیت به‌روزرسانی شد.', data: profile });
   } catch (err) {
     console.error((err as Error).message);
-    res.status(500).json({ success: false, message: 'خطای سرور' });
+    res.status(500).json({ success: 'error', message: 'خطای سرور' });
   }
 };

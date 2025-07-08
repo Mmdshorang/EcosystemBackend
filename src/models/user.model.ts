@@ -20,6 +20,5 @@ const UserSchema: Schema<IUser> = new Schema({
   profile: { type: Schema.Types.ObjectId, ref: 'Profile' }
 }, { timestamps: true });
 
-// ۳. ساخت و خروجی گرفتن مدل
 const User: Model<IUser> = mongoose.model<IUser>('User', UserSchema);
 export default User;

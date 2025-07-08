@@ -100,3 +100,4 @@ export const getProfileByUsername = async (req: Request, res: Response): Promise
     res.status(500).send('خطای سرور');
   }
 };
+

@@ -8,8 +8,7 @@ interface IUploadRequest extends Request {
 }
 
 export const uploadProfileAvatar = (req: IUploadRequest, res: Response) => {
-  // ✅ 2. Use the new interface here.
-  // ✅ 3. Now, TypeScript knows this property exists.
+
   if (req.fileValidationError) {
     res.status(400).json({ success: false, message: req.fileValidationError });
     return;
@@ -21,7 +20,7 @@ export const uploadProfileAvatar = (req: IUploadRequest, res: Response) => {
   }
 
   // Construct the public URL, ensuring forward slashes for web compatibility.
-  const fileUrl = req.file.path.replace('public', '').replace(/\\/g, '/');
+  const fileUrl = `/uploads/avatars/${req.file.filename}`; // فقط همین، نه replace و نه چیزی دیگه
 
   res.status(200).json({
     success: true,

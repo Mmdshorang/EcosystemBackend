@@ -7,28 +7,37 @@ import {
   deleteTeam,
   requestToJoinTeam,
   acceptJoinRequest,
+  uploadAvatar,
+  inviteUserToTeam,
+  getUserTeams, // 1. میدل‌ور آپلود را اینجا ایمپورت کن
 } from '../controllers/team.controller';
 import { auth } from '../middlewares/auth.middleware';
 
 const router = express.Router();
 
-router.get('/teams', getTeams);
+// مسیر برای گرفتن تمام تیم‌ها
+router.get('/my-teams', auth, getUserTeams);
+router.get('/', getTeams);
 
-
-router.post('/', auth, createTeam);
-
-
-router.route('/:id')
+// مسیر برای ساخت یک تیم جدید
+// 2. میدل‌ور uploadAvatar برای مدیریت فایل آواتار اضافه شد
+router.post('/', auth, uploadAvatar, createTeam);
+// مسیرهای مربوط به یک تیم خاص با ID
+router
+  .route('/:id')
   .get(getTeamById)
-  .put(auth, updateTeam)
+  // 3. میدل‌ور uploadAvatar برای مدیریت فایل آواتار در زمان ویرایش اضافه شد
+  .put(auth, uploadAvatar, updateTeam)
   .delete(auth, deleteTeam);
 
-
 // --- مسیرهای مدیریت عضویت ---
-// POST /api/team/:id/request-join
+router.post('/:teamId/invite/:userId', auth, inviteUserToTeam);
+// مسیر برای ارسال درخواست عضویت به تیم
+// POST /api/teams/:id/request-join
 router.post('/:id/request-join', auth, requestToJoinTeam);
 
-// POST /api/team/:teamId/accept-request/:userId
+// مسیر برای پذیرش درخواست عضویت توسط لیدر
+// POST /api/teams/:teamId/accept-request/:userId
 router.post('/:teamId/accept-request/:userId', auth, acceptJoinRequest);
 
 export default router;

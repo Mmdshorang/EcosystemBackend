@@ -5,7 +5,7 @@ import jwt, { JwtPayload } from 'jsonwebtoken';
 
 export const auth = (req: Request, res: Response, next: NextFunction): void => {
   const authHeader = req.header('Authorization');
-
+ console.log("1. ✅ میدلور auth اجرا شد.");
   if (!authHeader || !authHeader.startsWith('Bearer ')) {
     res.status(401).json({ success: false, message: 'عدم دسترسی، توکن نامعتبر است' });
     return;
@@ -19,6 +19,7 @@ export const auth = (req: Request, res: Response, next: NextFunction): void => {
     req.user = decoded.user; 
     next();
   } catch (err) {
+
     res.status(401).json({ success: false, message: 'توکن معتبر نیست' });
   }
 };

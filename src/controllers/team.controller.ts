@@ -1,16 +1,39 @@
 import { Request, Response } from 'express';
 import Team from '../models/Team.model';
-import User from '../models/User.model'; 
+import User from '../models/User.model';
 import mongoose from 'mongoose';
+import multer from 'multer';
+import path from 'path';
 import { UserPayload } from './profile.controller';
+import fs from 'fs';
+// --- تنظیمات Multer برای آپلود آواتار ---
+// فایل‌ها در پوشه 'uploads/avatars' ذخیره می‌شوند
+// نام فایل برای جلوگیری از تداخل، با یک timestamp همراه می‌شود
+const storage = multer.diskStorage({
+  // ✅ مسیر را به پوشه‌ای داخل 'public' تغییر بده
+  destination: (req, file, cb) => {
+    const uploadPath = 'public/uploads/avatars/';
+    // اگر پوشه‌ها وجود نداشتند، آن‌ها را می‌سازیم
+    fs.mkdirSync(uploadPath, { recursive: true });
+    cb(null, uploadPath);
+  },
+  filename: (req, file, cb) => {
+    cb(null, `${Date.now()}-${file.originalname}`);
+  },
+});
 
+const upload = multer({ storage: storage });
+export const uploadAvatar = upload.single('avatar');
+
+// --- ۱. ساخت تیم جدید (اصلاح‌شده برای آپلود فایل) ---
 export const createTeam = async (req: Request, res: Response) => {
   if (!req.user) {
     res.status(401).json({ message: 'Not authorized' });
     return;
   }
 
-  const { name, description, avatar } = req.body;
+  // فیلدهای متنی از req.body خوانده می‌شوند
+  const { name, description } = req.body;
 
   if (!name) {
     res.status(400).json({ message: 'نام تیم الزامی است.' });
@@ -19,12 +42,16 @@ export const createTeam = async (req: Request, res: Response) => {
 
   try {
     const user = req.user as UserPayload;
+
+    // مسیر فایل آپلود شده از req.file در دسترس است (اگر فایلی ارسال شده باشد)
+    const avatarUrl = req.file ? `/uploads/avatars/${req.file.filename}` : undefined;
+
     const newTeam = new Team({
       name,
       description,
-      avatar,
+      avatar: avatarUrl, // مسیر فایل را در دیتابیس ذخیره کن
       leader: user.id,
-      members: [{ user: user.id, roleInTeam: 'Leader' }],
+      members: [{ user: new mongoose.Types.ObjectId(user.id), roleInTeam: 'Leader' }],
     });
 
     await newTeam.save();
@@ -39,11 +66,10 @@ export const createTeam = async (req: Request, res: Response) => {
   }
 };
 
+// --- ۲. گرفتن لیست تمام تیم‌ها (بدون تغییر) ---
 export const getTeams = async (req: Request, res: Response) => {
   try {
-    const teams = await Team.find()
-      .populate('leader', 'username') // اطلاعات لیدر را از مدل User می‌گیریم
-      .sort({ createdAt: -1 });
+    const teams = await Team.find().populate('leader', 'username profile').sort({ createdAt: -1 });
     res.status(200).json(teams);
   } catch (error) {
     console.error(error);
@@ -51,7 +77,7 @@ export const getTeams = async (req: Request, res: Response) => {
   }
 };
 
-// --- ۳. گرفتن اطلاعات یک تیم خاص ---
+// --- ۳. گرفتن اطلاعات یک تیم خاص (بدون تغییر) ---
 export const getTeamById = async (req: Request, res: Response) => {
   try {
     const team = await Team.findById(req.params.id)
@@ -70,7 +96,7 @@ export const getTeamById = async (req: Request, res: Response) => {
   }
 };
 
-// --- ۴. به‌روزرسانی اطلاعات تیم ---
+// --- ۴. به‌روزرسانی اطلاعات تیم (اصلاح‌شده برای آپلود فایل) ---
 export const updateTeam = async (req: Request, res: Response) => {
   if (!req.user) {
     res.status(401).json({ message: 'Not authorized' });
@@ -83,21 +109,28 @@ export const updateTeam = async (req: Request, res: Response) => {
       res.status(404).json({ message: 'تیم یافت نشد.' });
       return;
     }
+
     const user = req.user as UserPayload;
-    // فقط لیدر تیم می‌تواند اطلاعات را ویرایش کند
     if (team.leader.toString() !== user.id.toString()) {
       res.status(403).json({ message: 'شما مجاز به ویرایش این تیم نیستید.' });
       return;
     }
 
-    const updatedTeam = await Team.findByIdAndUpdate(req.params.id, req.body, { new: true });
+    // داده‌های جدید را از req.body بگیرید
+    const updateData = { ...req.body };
+
+    // اگر فایل جدیدی آپلود شده بود، مسیر آن را به داده‌های آپدیت اضافه کنید
+    if (req.file) {
+      updateData.avatar = `/uploads/avatars/${req.file.filename}`;
+    }
+
+    const updatedTeam = await Team.findByIdAndUpdate(req.params.id, updateData, { new: true });
     res.status(200).json(updatedTeam);
   } catch (error) {
     console.error(error);
     res.status(500).json({ message: 'خطای سرور' });
   }
 };
-
 // --- ۵. حذف تیم ---
 export const deleteTeam = async (req: Request, res: Response) => {
   if (!req.user) {
@@ -188,5 +221,73 @@ export const acceptJoinRequest = async (req: Request, res: Response) => {
   } catch (error) {
     console.error(error);
     res.status(500).json({ message: 'خطای سرور' });
+  }
+};
+export const inviteUserToTeam = async (req: Request, res: Response) => {
+  if (!req.user) {
+    res.status(401).json({ message: 'Not authorized' });
+    return;
+  }
+
+  const { teamId, userId } = req.params;
+  const leader = req.user as UserPayload;
+
+  try {
+    const team = await Team.findById(teamId);
+    if (!team) {
+      res.status(404).json({ message: 'تیم یافت نشد.' });
+      return;
+    }
+
+    // فقط لیدر تیم می‌تواند کاربر دعوت کند
+    if (team.leader.toString() !== leader.id.toString()) {
+      res.status(403).json({ message: 'شما مجاز به دعوت عضو جدید نیستید.' });
+      return;
+    }
+
+    // بررسی اینکه آیا کاربر از قبل عضو یا در لیست انتظار هست یا نه
+    if (
+      team.members.some((m) => m.user.toString() === userId) ||
+      team.pendingRequests.some((id) => id.toString() === userId)
+    ) {
+       res.status(400).json({ message: 'این کاربر از قبل عضو تیم است یا در لیست انتظار قرار دارد.' });
+       return;
+    }
+
+    team.pendingRequests.push(new mongoose.Types.ObjectId(userId));
+    await team.save();
+
+    // تیم آپدیت شده را با اطلاعات کامل populate করে برگردان
+    const updatedTeam = await Team.findById(teamId)
+      .populate('leader', 'username')
+      .populate('members.user', 'username')
+      .populate('pendingRequests', 'username'); // <-- مهم
+
+    res.status(200).json(updatedTeam);
+  } catch (error) {
+    console.error(error);
+    res.status(500).json({ message: 'خطای سرور' });
+  }
+};
+
+
+export const getUserTeams = async (req: Request, res: Response) => {
+  if (!req.user) {
+     res.status(401).json({ message: 'Not authorized' });
+     return;
+  }
+
+  try {
+    const userId = (req.user as UserPayload).id;
+
+    // پیدا کردن تیم‌هایی که کاربر یا لیدر است یا عضو
+    const teams = await Team.find({
+      $or: [{ leader: userId }, { 'members.user': userId }],
+    }).select('name'); // فقط نام و آیدی تیم را برای دراپ‌دان نیاز داریم
+
+    res.status(200).json(teams);
+  } catch (error) {
+    console.error(error);
+    res.status(500).json({ message: 'Server Error' });
   }
 };

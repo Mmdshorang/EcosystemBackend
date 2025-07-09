@@ -8,8 +8,9 @@ import authRoutes from './routes/auth';
 import profileRoutes from './routes/profile';
 import uploadRoutes from './routes/upload.routes';
 import projectRoutes from './routes/project.routes';
-import teamRoutes from './routes/team.routes';
+import usersRoutes from './routes/user.routes';
 
+import teamRoutes from './routes/team.routes';
 
 import path from 'path';
 
@@ -46,6 +47,7 @@ app.use(cors());
 // jwt authentication
 app.use(passport.initialize() as unknown as RequestHandler);
 app.use('/api/auth', authRoutes);
+app.use('/api/users', usersRoutes);
 
 app.use('/api/profiles', profileRoutes);
 app.use('/api/projects', projectRoutes);

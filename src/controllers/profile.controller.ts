@@ -78,12 +78,14 @@ export const getAllUsers = async (req: Request, res: Response) => {
 export const getUserById = async (req: Request, res: Response) => {
   try {
     if (!mongoose.Types.ObjectId.isValid(req.params.id)) {
-      return res.status(400).json({ success: 'error', message: 'شناسه کاربر نامعتبر است.' });
+       res.status(400).json({ success: 'error', message: 'شناسه کاربر نامعتبر است.' });
+      return;
     }
 
     const user = await User.findById(req.params.id).select('-password');
     if (!user) {
-      return res.status(404).json({ success: 'error', message: 'کاربر مورد نظر یافت نشد.' });
+       res.status(404).json({ success: 'error', message: 'کاربر مورد نظر یافت نشد.' });
+       return;
     }
     res.status(200).json({ success: 'success', data: user });
   } catch (err) {

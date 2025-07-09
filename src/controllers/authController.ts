@@ -53,6 +53,7 @@ export const register = async (req: Request, res: Response): Promise<void> => {
 
     await newUser.save();
     await newProfile.save();
+    const populatedUser = await User.findById(newUser._id).populate('profile').lean();
 
     const payload = {
       user: {
@@ -87,7 +88,10 @@ export const register = async (req: Request, res: Response): Promise<void> => {
       res.status(200).json({
         status: 'success',
         message: 'ثبت‌نام با موفقیت انجام شد.',
-        data: { token },
+        data: {
+          token,
+          user: populatedUser,
+        },
       });
     });
   } catch (err) {
@@ -143,7 +147,7 @@ export const login = async (req: Request, res: Response): Promise<void> => {
       });
       return;
     }
-
+    const userObj = user.toObject();
     const payload = {
       user: {
         id: (user._id as mongoose.Types.ObjectId).toString(),
@@ -177,7 +181,10 @@ export const login = async (req: Request, res: Response): Promise<void> => {
       res.status(200).json({
         status: 'success',
         message: 'ورود با موفقیت انجام شد.',
-        data: { token },
+        data: {
+          token,
+          user: userObj,
+        },
       });
     });
   } catch (err) {

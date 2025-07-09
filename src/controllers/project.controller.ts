@@ -183,3 +183,30 @@ export const deleteProject = async (req: Request, res: Response) => {
     res.status(500).json({ message: 'Server Error' });
   }
 };
+
+export const getMyProjects = async (req: Request, res: Response) => {
+  if (!req.user) {
+     res.status(401).json({ message: 'Not authorized' });
+     return;
+  }
+
+  try {
+    const userId = (req.user as UserPayload).id;
+
+    const userTeams = await Team.find({
+      $or: [{ leader: userId }, { 'members.user': userId }],
+    }).select('_id');
+
+    const teamIds = userTeams.map(team => team._id);
+
+    const projects = await Project.find({ team: { $in: teamIds } })
+      .populate('team', 'name avatar')
+      .sort({ createdAt: -1 });
+      
+
+    res.status(200).json(projects);
+  } catch (error) {
+    console.error(error);
+    res.status(500).json({ message: 'Server Error' });
+  }
+};

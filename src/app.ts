@@ -9,7 +9,8 @@ import profileRoutes from './routes/profile';
 import uploadRoutes from './routes/upload.routes';
 import projectRoutes from './routes/project.routes';
 import usersRoutes from './routes/user.routes';
-
+import eventRoutes from './routes/event.routes';
+import associationRoutes from './routes/association.routes';
 import teamRoutes from './routes/team.routes';
 
 import path from 'path';
@@ -55,9 +56,9 @@ app.use('/api/team', teamRoutes);
 
 // Serve static files from the 'public' directory
 app.use(express.static(path.join(__dirname, '..', 'public')));
-
+app.use('/api/events', eventRoutes);
 app.use('/api/upload', uploadRoutes);
-
+app.use('/api/associations', associationRoutes);
 // send back a 404 error for any unknown api request
 
 export default app;

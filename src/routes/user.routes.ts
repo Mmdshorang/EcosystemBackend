@@ -1,7 +1,10 @@
 import express from 'express';
- // مسیر کنترلر خود را وارد کن
+// مسیر کنترلر خود را وارد کن
 import { auth } from '../middlewares/auth.middleware'; // میدل‌ور احراز هویت
 import { getAllUsers, getUserById, searchUsers } from '../controllers/profile.controller';
+
+import { updateUserRole, deleteUser } from '../controllers/user.controller';
+import { authorize } from '../middlewares/authorize.middleware';
 
 const router = express.Router();
 
@@ -17,5 +20,7 @@ router.get('/search', auth, searchUsers);
 // روت برای گرفتن یک کاربر خاص با ID
 // GET /api/users/:id
 router.get('/:id', auth, getUserById);
+router.patch('/:id/role', auth, authorize(['admin','association_manager']), updateUserRole);
 
+router.delete('/:id', auth, authorize(['admin']), deleteUser);
 export default router;

@@ -1,28 +1,22 @@
-// file: types/express.d.ts
+// src/types/express.d.ts
 
-// این اینترفیس شکل دقیق داده‌های داخل توکن شما را مشخص می‌کند
-export interface JwtPayload {
-  user: {
-    id: string;
-    role: string;
-  };
+// ۱. شکل دقیق داده‌های کاربر خود را تعریف می‌کنیم
+interface CustomUserPayload {
+  id: string;
+  role: string;
 }
 
-// این بخش اصلی کار است:
-// ما به تایپ‌اسکریپت می‌گوییم که به اینترفیس Request در Express
-// یک پراپرتی جدید به نام user اضافه کن
+// ۲. به صورت سراسری، ماژول Express را گسترش می‌دهیم
 declare global {
   namespace Express {
-    interface Request {
-      // This OVERRIDES any existing 'user' type from other libraries (like Passport)
-      // and sets it to the shape of our JWT payload.
-      user?: {
-        id: string;
-        role: string;
-      };
+    // ۳. به TypeScript می‌گوییم که اینترفیس User (که توسط Passport استفاده می‌شود)
+    // تمام پراپرتی‌های CustomUserPayload ما را هم دارد.
+    // این کار به جای بازنویسی، تایپ‌ها را با هم "ادغام" می‌کند.
+    export interface User extends CustomUserPayload {}
 
-      // This adds the custom property for handling file upload errors from multer.
-      fileValidationError?: string;
+    // ۴. تایید می‌کنیم که req.user از نوع User آپدیت شده ما است.
+    export interface Request {
+      user?: User;
     }
   }
 }

@@ -210,3 +210,63 @@ export const getMyProjects = async (req: Request, res: Response) => {
     res.status(500).json({ message: 'Server Error' });
   }
 };
+export const getProjectsByTeam = async (req: Request, res: Response) => {
+  // ۱. گرفتن ID تیم از پارامترهای URL
+  const teamId = req.params.teamId;
+
+  // ۲. گرفتن پارامترهای صفحه‌بندی از query string
+  const page = parseInt(req.query.page as string) || 1;
+  const limit = parseInt(req.query.limit as string) || 10;
+  const skip = (page - 1) * limit;
+
+  try {
+    // ۳. پیدا کردن پروژه‌هایی که فیلد 'team' آنها با teamId برابر است
+    const projects = await Project.find({ team: teamId })
+      .populate('team', 'name avatar') // اطلاعات تیم را هم اضافه می‌کنیم
+      .sort({ createdAt: -1 })
+      .skip(skip)
+      .limit(limit);
+
+    // ۴. شمارش کل پروژه‌های مربوط به این تیم برای صفحه‌بندی
+    const totalProjects = await Project.countDocuments({ team: teamId });
+
+    // ۵. ارسال پاسخ
+    res.status(200).json({
+      data: projects,
+      totalPages: Math.ceil(totalProjects / limit),
+      currentPage: page,
+    });
+  } catch (error) {
+    console.error(error);
+    res.status(500).json({ message: 'خطای سرور' });
+  }
+};
+
+export const getProjectById = async (req: Request, res: Response): Promise<void> => {
+    try {
+        const projectId = req.params.id;
+
+        const project = await Project.findById(projectId)
+            // اطلاعات تیم مربوط به پروژه را اضافه کن
+            .populate('team', 'name avatar')
+            // کامنت‌ها را اضافه کن و برای هر کامنت، اطلاعات نویسنده‌اش را هم اضافه کن
+            .populate({
+                path: 'comments',
+                populate: {
+                    path: 'author',
+                    select: 'username fullName avatar'
+                }
+            });
+
+        if (!project) {
+            res.status(404).json({ message: 'پروژه یافت نشد.' });
+            return;
+        }
+
+        res.status(200).json(project);
+
+    } catch (error: any) {
+        console.error('Get Project Error:', error.message);
+        res.status(500).json({ message: 'خطای سرور' });
+    }
+};

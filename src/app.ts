@@ -11,8 +11,11 @@ import projectRoutes from './routes/project.routes';
 import usersRoutes from './routes/user.routes';
 import eventRoutes from './routes/event.routes';
 import associationRoutes from './routes/association.routes';
+import messageRoutes from './routes/message.routes';
+import commentRoutes from './routes/comment.routes';
 import teamRoutes from './routes/team.routes';
-
+import http from 'http'; // ۱. http را وارد کنید
+import { Server } from 'socket.io';
 import path from 'path';
 
 const app = express();
@@ -45,15 +48,51 @@ app.use(mongoSanitize());
 
 app.use(cors());
 
+const httpServer = http.createServer(app);
+
+// ۴. یک نمونه از سرور Socket.IO بسازید و به سرور http متصل کنید
+const io = new Server(httpServer, {
+  cors: {
+    origin: 'http://localhost:3000', // آدرس فرانت‌اند شما
+    methods: ['GET', 'POST'],
+  },
+});
+
+// منطق مدیریت کاربران آنلاین
+let onlineUsers: { userId: string; socketId: string }[] = [];
+
+io.on('connection', (socket) => {
+  console.log(`🔌 User connected: ${socket.id}`);
+
+  // وقتی یک کاربر لاگین می‌کند، ID خود را به سرور می‌فرستد
+  socket.on('addNewUser', (userId) => {
+    !onlineUsers.some((user) => user.userId === userId) && onlineUsers.push({ userId, socketId: socket.id });
+    console.log('Online users:', onlineUsers);
+  });
+
+  // ارسال پیام
+  socket.on('sendMessage', (message) => {
+    const user = onlineUsers.find((u) => u.userId === message.receiver);
+    if (user) {
+      io.to(user.socketId).emit('getMessage', message);
+    }
+  });
+
+  socket.on('disconnect', () => {
+    onlineUsers = onlineUsers.filter((user) => user.socketId !== socket.id);
+    console.log(`🔌 User disconnected: ${socket.id}`);
+  });
+});
+
 // jwt authentication
 app.use(passport.initialize() as unknown as RequestHandler);
 app.use('/api/auth', authRoutes);
 app.use('/api/users', usersRoutes);
-
+app.use('/api/comments', commentRoutes);
 app.use('/api/profiles', profileRoutes);
 app.use('/api/projects', projectRoutes);
 app.use('/api/team', teamRoutes);
-
+app.use('/api/messages', messageRoutes);
 // Serve static files from the 'public' directory
 app.use(express.static(path.join(__dirname, '..', 'public')));
 app.use('/api/events', eventRoutes);

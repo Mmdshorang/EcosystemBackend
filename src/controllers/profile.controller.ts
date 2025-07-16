@@ -113,3 +113,99 @@ export const searchUsers = async (req: Request, res: Response) => {
     res.status(500).json({ success: 'error', message: 'خطای سرور' });
   }
 };
+
+
+export const searchProfiles = async (req: Request, res: Response): Promise<void> => {
+  try {
+    const searchQuery = req.query.q as string || '';
+    const page = parseInt(req.query.page as string) || 1;
+    const limit = parseInt(req.query.limit as string) || 10;
+    const skip = (page - 1) * limit;
+
+    if (!searchQuery) {
+        res.status(200).json({ data: [], totalPages: 0, currentPage: 1 });
+        return;
+    }
+
+    // ساخت یک عبارت منظم (Regex) برای جستجوی غیر حساس به حروف بزرگ و کوچک
+    const searchRegex = new RegExp(searchQuery, 'i');
+
+    // ۱. ساخت پایپ‌لاین Aggregation
+    const aggregationPipeline: any[] = [
+        // ۲. اتصال (Join) کالکشن Profile با کالکشن User
+        {
+            $lookup: {
+                from: 'users', // نام کالکشن کاربران در دیتابیس (معمولا حروف کوچک و جمع)
+                localField: 'user',
+                foreignField: '_id',
+                as: 'userDetails'
+            }
+        },
+        // چون userDetails یک آرایه است، آن را به یک آبجکت تبدیل می‌کنیم
+        {
+            $unwind: '$userDetails'
+        },
+        // ۳. فیلتر کردن نتایج بر اساس نام کامل یا نام کاربری
+        {
+            $match: {
+                $or: [
+                    { fullName: searchRegex },
+                    { 'userDetails.username': searchRegex }
+                ]
+            }
+        }
+    ];
+    
+    // ۴. اجرای پایپ‌لاین برای گرفتن نتایج صفحه‌بندی شده
+    const profiles = await Profile.aggregate([
+        ...aggregationPipeline,
+        { $skip: skip },
+        { $limit: limit }
+    ]);
+
+    // ۵. اجرای پایپ‌لاین برای شمارش کل نتایج (برای صفحه‌بندی)
+    const totalResults = await Profile.aggregate([
+        ...aggregationPipeline,
+        { $count: 'total' }
+    ]);
+
+    const total = totalResults.length > 0 ? totalResults[0].total : 0;
+    
+    res.status(200).json({
+        data: profiles,
+        totalPages: Math.ceil(total / limit),
+        currentPage: page,
+    });
+
+  } catch (error: any) {
+    console.error('Search Error:', error.message);
+    res.status(500).json({ message: 'خطای سرور' });
+  }
+};
+export const getProfileByUsername = async (req: Request, res: Response): Promise<void> => {
+  try {
+    // ۱. پیدا کردن کاربر بر اساس نام کاربری که از پارامتر URL آمده
+    const user = await User.findOne({ username: req.params.username });
+
+    if (!user) {
+      res.status(404).json({ message: 'کاربر با این نام کاربری یافت نشد.' });
+      return;
+    }
+
+    // ۲. پیدا کردن پروفایل بر اساس ID کاربری که در مرحله قبل پیدا شد
+    const profile = await Profile.findOne({ user: user._id })
+      .populate('user', 'username email'); // اطلاعات کاربر را هم به پروفایل اضافه می‌کنیم
+
+    if (!profile) {
+      res.status(404).json({ message: 'پروفایل برای این کاربر یافت نشد.' });
+      return;
+    }
+
+    // ۳. ارسال پاسخ موفقیت‌آمیز
+    res.status(200).json(profile);
+
+  } catch (error: any) {
+    console.error('Error fetching profile by username:', error.message);
+    res.status(500).json({ message: 'خطای سرور' });
+  }
+};

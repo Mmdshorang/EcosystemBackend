@@ -75,8 +75,10 @@
     "passport": "^0.7.0",
     "passport-jwt": "^4.0.1",
     "pm2": "^5.4.3",
+    "socket.io": "^4.8.1",
     "swagger-jsdoc": "^6.2.8",
     "swagger-ui-express": "^5.0.1",
+    "use-debounce": "^10.0.5",
     "validator": "^13.12.0",
     "winston": "^3.17.0"
   },
@@ -99,6 +101,7 @@
     "@types/nodemailer": "^6.4.17",
     "@types/passport": "^1.0.17",
     "@types/passport-jwt": "^4.0.1",
+    "@types/socket.io": "^3.0.2",
     "@types/supertest": "^6.0.2",
     "@types/swagger-jsdoc": "^6.0.4",
     "@types/swagger-ui-express": "^4.1.7",

@@ -38,6 +38,6 @@ router.put(
   updateAssociation, // اتصال به کنترلر جدید
 );
 // حذف یک انجمن
-router.delete('/:id', auth, authorize(['admin']), deleteAssociation);
+router.delete('/:id', auth, authorize(['admin','association_manager']), deleteAssociation);
 
 export default router;

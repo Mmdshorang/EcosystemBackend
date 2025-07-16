@@ -9,7 +9,9 @@ import {
   acceptJoinRequest,
   uploadAvatar,
   inviteUserToTeam,
-  getUserTeams, // 1. میدل‌ور آپلود را اینجا ایمپورت کن
+  getUserTeams,
+  rateTeam,
+  getPublicTeamDetails, // 1. میدل‌ور آپلود را اینجا ایمپورت کن
 } from '../controllers/team.controller';
 import { auth } from '../middlewares/auth.middleware';
 
@@ -23,6 +25,9 @@ router.get('/', getTeams);
 // 2. میدل‌ور uploadAvatar برای مدیریت فایل آواتار اضافه شد
 router.post('/', auth, uploadAvatar, createTeam);
 // مسیرهای مربوط به یک تیم خاص با ID
+router.post('/:id/rate', auth, rateTeam);
+router.get('/details/:id', getPublicTeamDetails);
+
 router
   .route('/:id')
   .get(getTeamById)

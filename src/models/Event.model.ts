@@ -1,6 +1,7 @@
 import mongoose, { Document, Schema, Model } from 'mongoose';
+import { IComment } from './Comment.model'; // تایپ کامنت را وارد کنید
 
-// 1. Define the TypeScript Interface for the Event document
+// 1. فیلد کامنت‌ها را به اینترفیس اضافه کنید
 export interface IEvent extends Document {
   title: string;
   description: string;
@@ -10,10 +11,10 @@ export interface IEvent extends Document {
   location?: string;
   association: mongoose.Types.ObjectId;
   registeredUsers: mongoose.Types.ObjectId[];
+  comments: mongoose.Types.ObjectId[] | IComment[]; // <-- این خط اضافه شد
   isArchived: boolean;
 }
 
-// 2. Create the Schema, linking it to the interface
 const EventSchema: Schema<IEvent> = new Schema({
   title: { type: String, required: true },
   description: { type: String, required: true },
@@ -27,10 +28,11 @@ const EventSchema: Schema<IEvent> = new Schema({
   location: { type: String },
   association: { type: mongoose.Schema.Types.ObjectId, ref: 'Association', required: true },
   registeredUsers: [{ type: mongoose.Schema.Types.ObjectId, ref: 'User' }],
-  isArchived: { type: Boolean, default: false }
+  isArchived: { type: Boolean, default: false },
+  // ۲. فیلد کامنت‌ها را به اسکما اضافه کنید
+  comments: [{ type: mongoose.Schema.Types.ObjectId, ref: 'Comment' }] // <-- این خط اضافه شد
 }, { timestamps: true });
 
-// 3. Create and export the Model, ensuring it's typed with the interface
 const Event: Model<IEvent> = mongoose.model<IEvent>('Event', EventSchema);
 
 export default Event;

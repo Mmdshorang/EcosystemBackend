@@ -95,7 +95,77 @@ export const getTeamById = async (req: Request, res: Response) => {
     res.status(500).json({ message: 'خطای سرور' });
   }
 };
+export const getPublicTeamDetails = async (req: Request, res: Response): Promise<void> => {
+  try {
+    const teamId = req.params.id;
 
+    // ۱. پیدا کردن تیم با ID
+    const team = await Team.findById(teamId)
+      // ۲. جایگزینی ID با اطلاعات واقعی از کالکشن‌های دیگر
+      .populate({
+        path: 'leader',
+        select: 'username fullName', // فقط این فیلدها از لیدر را برگردان
+      })
+      .populate({
+        path: 'members.user',
+        select: 'username fullName avatar', // فیلدهای مورد نظر از اعضا
+      })
+      .populate('projects', 'title status'); // فیلدهای مورد نظر از پروژه‌ها
+
+    // ۳. بررسی وجود تیم
+    if (!team) {
+      res.status(404).json({ message: 'تیم با این ID یافت نشد.' });
+      return;
+    }
+
+    // ۴. ارسال پاسخ موفقیت‌آمیز
+    res.status(200).json(team);
+
+  } catch (error: any) {
+    // مدیریت خطاهای احتمالی مثل ID نامعتبر
+    console.error('Error in getPublicTeamDetails:', error.message);
+    res.status(500).json({ message: 'خطای سرور', error: error.message });
+  }
+};
+
+export const rateTeam = async (req: Request, res: Response): Promise<void> => {
+    const { score } = req.body;
+    const userPayload = req.user as UserPayload;
+
+    // ۱. اعتبار سنجی امتیاز
+    if (!score || score < 1 || score > 5) {
+        res.status(400).json({ message: 'امتیاز باید عددی بین ۱ تا ۵ باشد.' });
+        return;
+    }
+
+    try {
+        const team = await Team.findById(req.params.id);
+        if (!team) {
+            res.status(404).json({ message: 'تیم یافت نشد.' });
+            return;
+        }
+
+        // ۲. بررسی اینکه آیا کاربر قبلاً امتیاز داده است یا خیر
+        const existingRatingIndex = team.ratings.findIndex(
+            (r) => r.user.toString() === userPayload.id
+        );
+
+        if (existingRatingIndex > -1) {
+            // اگر قبلاً امتیاز داده، امتیاز او را آپدیت کن
+            team.ratings[existingRatingIndex].score = score;
+        } else {
+            // اگر اولین بار است، یک امتیاز جدید اضافه کن
+            team.ratings.push({ user: userPayload.id as any, score });
+        }
+
+        await team.save();
+        res.status(200).json(team);
+
+    } catch (error) {
+        console.error(error);
+        res.status(500).json({ message: 'خطای سرور' });
+    }
+};
 // --- ۴. به‌روزرسانی اطلاعات تیم (اصلاح‌شده برای آپلود فایل) ---
 export const updateTeam = async (req: Request, res: Response) => {
   if (!req.user) {

@@ -3,7 +3,7 @@
 import express from 'express';
 import { check } from 'express-validator';
 
-import { getMyProfile, updateMyProfile } from '../controllers/profile.controller';
+import { getMyProfile, getProfileByUsername, searchProfiles, updateMyProfile } from '../controllers/profile.controller';
 import { auth } from '../middlewares/auth.middleware';
 
 const router = express.Router();
@@ -11,7 +11,8 @@ const router = express.Router();
 // @route   GET api/profile/me
 // @desc    دریافت پروفایل کاربر فعلی
 router.get('/me', auth, getMyProfile);
-
+router.get('/search', searchProfiles);
+router.get('/user/:username', getProfileByUsername);
 router.put(
   '/me',
   [

@@ -180,7 +180,7 @@ export const getAllEvents = async (req: Request, res: Response) => {
   try {
     const events = await Event.find({
       isArchived: false,
-      date: { $gte: new Date() }, // فقط رویدادهایی که تاریخشان نگذشته
+     // date: { $gte: new Date() }, // فقط رویدادهایی که تاریخشان نگذشته
     })
       .sort({ date: 'asc' })
       .populate('association', 'name logo'); // اطلاعات انجمن را هم بگیر
@@ -279,6 +279,37 @@ export const archiveEvent = async (req: Request, res: Response) => {
         res.status(200).json({ message: 'رویداد با موفقیت بایگانی شد.', event });
     } catch (error) {
         console.error(error);
+        res.status(500).json({ message: 'خطای سرور' });
+    }
+};
+
+
+export const getEventById = async (req: Request, res: Response): Promise<void> => {
+    try {
+        const eventId = req.params.id;
+
+        const event = await Event.findById(eventId)
+            // اطلاعات انجمن برگزارکننده را اضافه کن
+            .populate('association', 'name logo')
+            // کامنت‌ها را اضافه کن و برای هر کامنت، اطلاعات نویسنده‌اش را هم اضافه کن
+            .populate({
+                path: 'comments',
+                options: { sort: { createdAt: -1 } }, // جدیدترین کامنت‌ها بالا باشند
+                populate: {
+                    path: 'author',
+                    select: 'username fullName avatar'
+                }
+            });
+
+        if (!event) {
+            res.status(404).json({ message: 'رویداد یافت نشد.' });
+            return;
+        }
+
+        res.status(200).json(event);
+
+    } catch (error: any) {
+        console.error('Get Event Error:', error.message);
         res.status(500).json({ message: 'خطای سرور' });
     }
 };

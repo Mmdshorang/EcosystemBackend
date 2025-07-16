@@ -11,6 +11,7 @@ import {
   getEventRegistrations,
   archiveEvent,
   getMyAssociation,
+  getEventById,
 } from '../controllers/event.controller';
 import { auth } from '../middlewares/auth.middleware';
 
@@ -34,7 +35,7 @@ router.post('/', auth, createEvent);
 
 // آپدیت یک رویداد
 router.put('/:id', auth, updateEvent);
-
+router.get('/:id', getEventById);
 // حذف یک رویداد
 router.delete('/:id', auth, deleteEvent);
 

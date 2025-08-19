@@ -23,10 +23,6 @@ router.put(
 
     check('bio', 'بیوگرافی نمی‌تواند بیشتر از 250 کاراکتر باشد').optional().isLength({ max: 250 }),
     check('skills', 'مهارت‌ها باید به صورت آرایه‌ای از رشته‌ها باشد').optional().isArray(),
-
-    check('socialLinks.linkedin', 'آدرس لینکدین نامعتبر است').optional().isURL(),
-    check('socialLinks.github', 'آدرس گیت‌هاب نامعتبر است').optional().isURL(),
-    check('socialLinks.website', 'آدرس وب‌سایت نامعتبر است').optional().isURL(),
   ],
   updateMyProfile,
 );

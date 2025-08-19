@@ -12,6 +12,7 @@ import {
   archiveEvent,
   getMyAssociation,
   getEventById,
+  unregisterFromEvent,
 } from '../controllers/event.controller';
 import { auth } from '../middlewares/auth.middleware';
 
@@ -20,9 +21,11 @@ const router = Router();
 // ### روت‌های عمومی (برای همه کاربران) ###
 router.get('/', getAllEvents); // دریافت همه رویدادهای آینده
 router.get('/association/:associationId', getEventsByAssociation); // دریافت رویدادهای یک انجمن خاص
-
+router.get('/:id/registrations', auth, getEventRegistrations);
 // ### روت‌های کاربران احراز هویت شده ###
-router.post('/:id/register', auth, registerForEvent); // ثبت‌نام در یک رویداد
+// ثبت‌نام در یک رویداد
+router.post('/:eventId/register', auth, registerForEvent);
+router.post('/:eventId/unregister', auth, unregisterFromEvent); // لغو ثبت‌نام در یک رویداد
 
 // ### روت‌های مخصوص مدیر انجمن ###
 // تمام روت‌های زیر نیاز به احراز هویت دارند
@@ -43,6 +46,5 @@ router.delete('/:id', auth, deleteEvent);
 router.patch('/:id/archive', auth, archiveEvent);
 
 // دریافت لیست ثبت‌نامی‌های یک رویداد
-router.get('/:id/registrations', auth, getEventRegistrations);
 
 export default router;

@@ -1,8 +1,9 @@
 import express from 'express';
-import { createComment, getCommentsByTarget } from '../controllers/comment.controller';
+import { createComment, deleteComment, getCommentsByTarget } from '../controllers/comment.controller';
 import { auth } from '../middlewares/auth.middleware'; // میدل‌ور احراز هویت
 
 const router = express.Router();
+router.delete('/:commentId', auth, deleteComment);
 
 // یک مسیر داینامیک برای مدیریت هر دو نوع هدف (پروژه و رویداد)
 router.route('/:targetModel(Project|Event)/:targetId')

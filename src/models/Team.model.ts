@@ -5,7 +5,10 @@ interface ITeamMember {
   user: mongoose.Types.ObjectId;
   roleInTeam: string;
 }
-
+interface TeamLean {
+  _id: mongoose.Types.ObjectId;
+  name: string;
+}
 interface ITeamRating {
   user: mongoose.Types.ObjectId;
   score: number;

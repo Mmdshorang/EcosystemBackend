@@ -15,10 +15,6 @@ import { authorize } from '../middlewares/authorize.middleware';
 
 const router = Router();
 
-// ===============================================
-//                  روت‌های عمومی
-// ===============================================
-
 // دریافت لیست همه انجمن‌ها
 router.get('/', getAllAssociations);
 

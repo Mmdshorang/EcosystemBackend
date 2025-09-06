@@ -1,5 +1,14 @@
 import express from 'express';
-import { createProject, getProjects, updateProject, deleteProject, getMyProjects, getProjectsByTeam, getProjectById } from '../controllers/project.controller';
+import {
+  createProject,
+  getProjects,
+  updateProject,
+  deleteProject,
+  getMyProjects,
+  getProjectsByTeam,
+  getProjectById,
+  getProjectById2,
+} from '../controllers/project.controller';
 import { auth } from '../middlewares/auth.middleware';
 
 const router = express.Router();
@@ -8,7 +17,7 @@ const router = express.Router();
 // @desc    Get all projects (public with pagination)
 // @access  Public
 router.get('/', getProjects);
-
+router.get('by2/:id', getProjectById2);
 // @route   POST /api/projects
 // @desc    Create a new project
 // @access  Private

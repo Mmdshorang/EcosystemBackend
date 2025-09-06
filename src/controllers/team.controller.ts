@@ -63,11 +63,21 @@ export const createTeam = async (req: Request, res: Response) => {
 // --- ۲. گرفتن لیست تمام تیم‌ها ---
 export const getTeams = async (req: Request, res: Response) => {
   try {
-    const teams = await Team.find().populate('leader', 'username profile').sort({ createdAt: -1 });
+    const teams = await Team.aggregate([
+      {
+        $addFields: {
+          averageRating: { $ifNull: [{ $avg: "$ratings.score" }, 0] }
+        }
+      },
+      {
+        $sort: { averageRating: -1 } // مرتب‌سازی بر اساس امتیاز
+      }
+    ]);
+
     res.status(200).json(teams);
   } catch (error) {
     console.error(error);
-    res.status(500).json({ message: 'خطای سرور' });
+    res.status(500).json({ message: "خطای سرور" });
   }
 };
 

@@ -46,14 +46,14 @@ export const createProject = async (req: Request, res: Response) => {
     if (team) {
       const teamToAssign = await Team.findById(team);
       if (!teamToAssign) {
-         res.status(404).json({ message: 'Team not found.' });
-         return;
+        res.status(404).json({ message: 'Team not found.' });
+        return;
       }
 
       const user = req.user as UserPayload;
       if (teamToAssign.leader.toString() !== user.id) {
-         res.status(403).json({ message: 'User is not authorized to create a project for this team.' });
-         return;
+        res.status(403).json({ message: 'User is not authorized to create a project for this team.' });
+        return;
       }
 
       // حالا این خط بدون خطا کار می‌کند
@@ -186,8 +186,8 @@ export const deleteProject = async (req: Request, res: Response) => {
 
 export const getMyProjects = async (req: Request, res: Response) => {
   if (!req.user) {
-     res.status(401).json({ message: 'Not authorized' });
-     return;
+    res.status(401).json({ message: 'Not authorized' });
+    return;
   }
 
   try {
@@ -197,12 +197,11 @@ export const getMyProjects = async (req: Request, res: Response) => {
       $or: [{ leader: userId }, { 'members.user': userId }],
     }).select('_id');
 
-    const teamIds = userTeams.map(team => team._id);
+    const teamIds = userTeams.map((team) => team._id);
 
     const projects = await Project.find({ team: { $in: teamIds } })
       .populate('team', 'name avatar')
       .sort({ createdAt: -1 });
-      
 
     res.status(200).json(projects);
   } catch (error) {
@@ -243,30 +242,71 @@ export const getProjectsByTeam = async (req: Request, res: Response) => {
 };
 
 export const getProjectById = async (req: Request, res: Response): Promise<void> => {
-    try {
-        const projectId = req.params.id;
+  try {
+    const projectId = req.params.id;
 
-        const project = await Project.findById(projectId)
-            // اطلاعات تیم مربوط به پروژه را اضافه کن
-            .populate('team', 'name avatar')
-            // کامنت‌ها را اضافه کن و برای هر کامنت، اطلاعات نویسنده‌اش را هم اضافه کن
-            .populate({
-                path: 'comments',
-                populate: {
-                    path: 'author',
-                    select: 'username fullName avatar'
-                }
-            });
+    const project = await Project.findById(projectId)
+      // اطلاعات تیم مربوط به پروژه را اضافه کن
+      .populate('team', 'name avatar')
+      // کامنت‌ها را اضافه کن و برای هر کامنت، اطلاعات نویسنده‌اش را هم اضافه کن
+      .populate({
+        path: 'comments',
+        populate: {
+          path: 'author',
+          select: 'username fullName avatar',
+        },
+      });
 
-        if (!project) {
-            res.status(404).json({ message: 'پروژه یافت نشد.' });
-            return;
-        }
-
-        res.status(200).json(project);
-
-    } catch (error: any) {
-        console.error('Get Project Error:', error.message);
-        res.status(500).json({ message: 'خطای سرور' });
+    if (!project) {
+      res.status(404).json({ message: 'پروژه یافت نشد.' });
+      return;
     }
+
+    res.status(200).json(project);
+  } catch (error: any) {
+    console.error('Get Project Error:', error.message);
+    res.status(500).json({ message: 'خطای سرور' });
+  }
+};
+
+export const getProjectById2 = async (req: Request, res: Response) => {
+  const { id } = req.params;
+
+  if (!mongoose.Types.ObjectId.isValid(id)) {
+    res.status(400).json({ message: 'شناسه پروژه معتبر نیست.' });
+    return;
+  }
+
+  try {
+    const project = await Project.findById(id)
+      .populate({ path: 'team', select: 'name description avatar' })
+      .populate({
+        path: 'comments',
+        populate: { path: 'author', select: 'username avatar' },
+      })
+      .populate({ path: 'likes', select: 'username avatar' })
+      .exec();
+
+    if (!project) {
+      res.status(404).json({ message: 'پروژه یافت نشد.' });
+      return;
+    }
+
+    res.status(200).json({
+      _id: project._id,
+      title: project.title,
+      description: project.description,
+      image: project.image,
+      link: project.link,
+      status: project.status,
+      tags: project.tags,
+      team: project.team,
+      comments: project.comments,
+      likes: project.likes,
+      likeCount: project.likeCount,
+    });
+  } catch (error) {
+    console.error(error);
+    res.status(500).json({ message: 'خطا در دریافت جزئیات پروژه.' });
+  }
 };

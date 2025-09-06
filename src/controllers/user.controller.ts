@@ -83,47 +83,36 @@ export const deleteUser = async (req: Request, res: Response) => {
 };
 
 export const getDashboardStats = async (req: Request, res: Response) => {
-  if (!req.user) {
-    res.status(401).json({ message: 'Not authorized' });
-    return;
-  }
+  try {
+    const userId = (req.user as UserPayload).id;
+    const now = new Date(); // شمارش پروژه‌های فعال
 
-  try {
-    const userId = (req.user as UserPayload).id;
-    const now = new Date();
+    const activeProjectsCount = await Project.countDocuments({
+      members: userId,
+      status: { $in: ['In Progress', 'Active'] },
+    }); // شمارش تیم‌های کاربر
 
-    // شمارش پروژه‌های فعال
-    const activeProjectsCount = await Project.countDocuments({
-      members: userId,
-      status: { $in: ['In Progress', 'Active'] },
-    });
+    const userTeamsCount = await Team.countDocuments({
+      $or: [{ leader: userId }, { 'members.user': userId }],
+    }); // شمارش رویدادهای پیش رو
 
-    // شمارش تیم‌های کاربر
-    const userTeamsCount = await Team.countDocuments({
-      $or: [{ leader: userId }, { 'members.user': userId }],
-    });
+    const upcomingEventsCount = await Event.countDocuments({
+      registeredUsers: userId,
+      date: { $gte: now },
+    }); // ✅ شمارش درخواست‌های عضویت از مدل TeamJoinRequest
+    const joinRequestsCount = await TeamJoinRequest.countDocuments({
+      team: { $in: await Team.find({ leader: userId }).distinct('_id') },
+      status: 'pending',
+    });
 
-    // شمارش رویدادهای پیش رو
-    const upcomingEventsCount = await Event.countDocuments({
-      registeredUsers: userId,
-      date: { $gte: now },
-    });
-    
-    // ✅ شمارش درخواست‌های عضویت از مدل TeamJoinRequest
-    const joinRequestsCount = await TeamJoinRequest.countDocuments({
-      team: { $in: await Team.find({ leader: userId }).distinct('_id') },
-      status: 'pending',
-    });
-
-
-    res.status(200).json({
-      activeProjects: activeProjectsCount,
-      myTeams: userTeamsCount,
-      upcomingEvents: upcomingEventsCount,
-      joinRequests: joinRequestsCount,
-    });
-  } catch (error) {
-    console.error('Error fetching dashboard stats:', error);
-    res.status(500).json({ message: 'خطای سرور در دریافت آمار داشبورد' });
-  }
+    res.status(200).json({
+      activeProjects: activeProjectsCount,
+      myTeams: userTeamsCount,
+      upcomingEvents: upcomingEventsCount,
+      joinRequests: joinRequestsCount,
+    });
+  } catch (error) {
+    console.error('Error fetching dashboard stats:', error);
+    res.status(500).json({ message: 'خطای سرور در دریافت آمار داشبورد' });
+  }
 };

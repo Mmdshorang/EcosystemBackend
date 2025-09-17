@@ -1,9 +1,9 @@
 import { Request, Response } from 'express';
 import Event, { IEvent } from '../models/Event.model';
-import Association from '../models/Association.model';
+import Association, { IAssociationRequest } from '../models/Association.model';
 import EventRegistration from '../models/EventRegistration.model';
 import { UserPayload } from './profile.controller';
-import { IAssociation } from '../models/Association.model';
+
 import mongoose from 'mongoose';
 // فرض می‌کنیم که میدلور احراز هویت، اطلاعات کاربر را در req.user قرار می‌دهد
 
@@ -83,16 +83,15 @@ export const updateEvent = async (req: Request, res: Response) => {
   const user = req.user as UserPayload;
 
   try {
-    const event = await Event.findById(id).populate<{ association: IAssociation }>('association');
+    const event = await Event.findById(id).populate<{ association: IAssociationRequest }>('association');
 
     if (!event) {
       res.status(404).json({ message: 'رویداد یافت نشد.' });
       return;
     }
 
-    if (event.association.manager.toString() !== user.id) {
-      res.status(403).json({ message: 'شما مجاز به ویرایش این رویداد نیستید.' });
-      return;
+    if (user.role !== 'association_manager') {
+       res.status(403).json({ message: 'شما مجاز به ویرایش این رویداد نیستید.' });return;
     }
 
     const updatedEvent = await Event.findByIdAndUpdate(id, req.body, { new: true, runValidators: true });
@@ -113,16 +112,15 @@ export const deleteEvent = async (req: Request, res: Response) => {
   const user = req.user as UserPayload;
 
   try {
-    const event = await Event.findById(id).populate<{ association: IAssociation }>('association');
+    const event = await Event.findById(id).populate<{ association: IAssociationRequest }>('association');
 
     if (!event) {
       res.status(404).json({ message: 'رویداد یافت نشد.' });
       return;
     }
 
-    if (event.association.manager.toString() !== user.id) {
-      res.status(403).json({ message: 'شما مجاز به حذف این رویداد نیستید.' });
-      return;
+    if (user.role !== 'association_manager' && user.role !== 'admin') {
+       res.status(403).json({ message: 'شما مجاز به حذف این رویداد نیستید.' });return;
     }
 
     // Delete the event and all related registrations
@@ -141,8 +139,6 @@ export const deleteEvent = async (req: Request, res: Response) => {
  * @route   POST /api/events/:id/register
  * @access  Private (Logged-in User)
  */
-
-
 
 export const getAllEvents = async (req: Request, res: Response) => {
   try {
@@ -195,16 +191,15 @@ export const getEventRegistrations = async (req: Request, res: Response) => {
   const user = req.user as UserPayload;
 
   try {
-    const event = await Event.findById(eventId).populate<{ association: IAssociation }>('association');
+    const event = await Event.findById(eventId).populate<{ association: IAssociationRequest }>('association');
     if (!event) {
       res.status(404).json({ message: 'رویداد یافت نشد.' });
       return;
     }
 
     // بررسی دسترسی: فقط مدیر همان انجمن می‌تواند لیست را ببیند
-    if (event.association.manager.toString() !== user.id) {
-      res.status(403).json({ message: 'شما مجاز به دیدن این اطلاعات نیستید.' });
-      return;
+    if (user.role !== 'association_manager' && user.role !== 'admin') {
+       res.status(403).json({ message: 'شما مجاز به دیدن این اطلاعات نیستید.' });return;
     }
 
     // پیدا کردن تمام ثبت‌نامی‌ها و دریافت اطلاعات کاربران
@@ -227,17 +222,17 @@ export const archiveEvent = async (req: Request, res: Response) => {
   const user = req.user as UserPayload;
 
   try {
-    const event = await Event.findById(id).populate<{ association: IAssociation }>('association');
+    const event = await Event.findById(id).populate<{ association: IAssociationRequest }>('association');
     if (!event) {
       res.status(404).json({ message: 'رویداد یافت نشد.' });
       return;
     }
 
     // بررسی دسترسی
-    if (event.association.manager.toString() !== user.id) {
-      res.status(403).json({ message: 'شما مجاز به بایگانی این رویداد نیستید.' });
-      return;
-    }
+if (user.role !== 'association_manager' && user.role !== 'admin') {
+   res.status(403).json({ message: 'شما مجاز به بایگانی این رویداد نیستید.' });return;
+}
+
 
     event.isArchived = true;
     await event.save();
@@ -279,73 +274,70 @@ export const getEventById = async (req: Request, res: Response): Promise<void> =
 };
 
 export const unregisterFromEvent = async (req: Request, res: Response) => {
-    if (!req.user) {
-         res.status(401).json({ message: 'Not authorized' });
-         return;
+  if (!req.user) {
+    res.status(401).json({ message: 'Not authorized' });
+    return;
+  }
+
+  try {
+    const { eventId } = req.params;
+    const userId = (req.user as UserPayload).id;
+
+    const event = await Event.findById(eventId);
+    if (!event) {
+      res.status(404).json({ message: 'رویداد یافت نشد.' });
+      return;
     }
 
-    try {
-        const { eventId } = req.params;
-        const userId = (req.user as UserPayload).id;
+    // ✅ حذف ثبت‌نام از مدل EventRegistration
+    await EventRegistration.deleteOne({ user: userId, event: eventId });
 
-        const event = await Event.findById(eventId);
-        if (!event) {
-             res.status(404).json({ message: 'رویداد یافت نشد.' });
-             return;
-        }
+    // ✅ حذف کاربر از آرایه registeredUsers در مدل Event
+    event.registeredUsers = event.registeredUsers.filter((id) => id.toString() !== userId);
+    await event.save();
 
-        // ✅ حذف ثبت‌نام از مدل EventRegistration
-        await EventRegistration.deleteOne({ user: userId, event: eventId });
-
-        // ✅ حذف کاربر از آرایه registeredUsers در مدل Event
-        event.registeredUsers = event.registeredUsers.filter(id => id.toString() !== userId);
-        await event.save();
-
-        res.status(200).json({ message: 'ثبت‌نام شما با موفقیت لغو شد.' });
-
-    } catch (error) {
-        console.error(error);
-        res.status(500).json({ message: 'خطای سرور' });
-    }
+    res.status(200).json({ message: 'ثبت‌نام شما با موفقیت لغو شد.' });
+  } catch (error) {
+    console.error(error);
+    res.status(500).json({ message: 'خطای سرور' });
+  }
 };
 
 export const registerForEvent = async (req: Request, res: Response) => {
   const { eventId } = req.params;
- const user = req.user as UserPayload;
+  const user = req.user as UserPayload;
 
-    if (!user) {
-        res.status(401).json({ message: 'Not authorized' });
-        return;
+  if (!user) {
+    res.status(401).json({ message: 'Not authorized' });
+    return;
+  }
+
+  try {
+    // Check if event exists
+    const event = await Event.findById(eventId);
+    if (!event) {
+      res.status(404).json({ message: 'رویداد یافت نشد.' });
+      return;
     }
 
-    try {
-        // Check if event exists
-        const event = await Event.findById(eventId);
-        if (!event) {
-            res.status(404).json({ message: 'رویداد یافت نشد.' });
-            return;
-        }
-
-        // Check if user is already registered using the dedicated EventRegistration model
-        const existingRegistration = await EventRegistration.findOne({ user: user.id, event: eventId });
-        if (existingRegistration) {
-            res.status(409).json({ message: 'شما قبلاً در این رویداد ثبت‌نام کرده‌اید.' }); // 409 Conflict
-            return;
-        }
-
-        // Create new registration document
-        const registration = new EventRegistration({ user: user.id, event: eventId });
-        await registration.save();
-              const objectIdUser = new mongoose.Types.ObjectId(user.id);
-        // ✅ Add the user to the event's registeredUsers array
-        event.registeredUsers.push(objectIdUser);
-        await event.save();
-
-        res.status(201).json({ message: 'ثبت‌نام شما با موفقیت انجام شد.' });
-    } catch (error) {
-        console.error(error);
-        res.status(500).json({ message: 'خطای سرور' });
+    // Check if user is already registered using the dedicated EventRegistration model
+    const existingRegistration = await EventRegistration.findOne({ user: user.id, event: eventId });
+    if (existingRegistration) {
+      res.status(409).json({ message: 'شما قبلاً در این رویداد ثبت‌نام کرده‌اید.' }); // 409 Conflict
+      return;
     }
+
+    // Create new registration document
+    const registration = new EventRegistration({ user: user.id, event: eventId });
+    await registration.save();
+    const objectIdUser = new mongoose.Types.ObjectId(user.id);
+    // ✅ Add the user to the event's registeredUsers array
+    event.registeredUsers.push(objectIdUser);
+    await event.save();
+
+    res.status(201).json({ message: 'ثبت‌نام شما با موفقیت انجام شد.' });
+  } catch (error) {
+    console.error(error);
+    res.status(500).json({ message: 'خطای سرور' });
+  }
 };
-
-

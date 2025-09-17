@@ -17,7 +17,7 @@ import teamRoutes from './routes/team.routes';
 import http from 'http'; // ۱. http را وارد کنید
 import { Server } from 'socket.io';
 import path from 'path';
-
+import associationRequestRoutes from './routes/associationRequest.routes';
 const app = express();
 
 // log all incoming requests
@@ -93,6 +93,8 @@ app.use('/api/profiles', profileRoutes);
 app.use('/api/projects', projectRoutes);
 app.use('/api/team', teamRoutes);
 app.use('/api/messages', messageRoutes);
+app.use('/api/association-requests', associationRequestRoutes);
+
 // Serve static files from the 'public' directory
 app.use(express.static(path.join(__dirname, '..', 'public')));
 app.use('/api/events', eventRoutes);

@@ -1,7 +1,7 @@
 
 import mongoose, { Document, Schema, Model } from 'mongoose';
 // فرض می‌کنیم تایپ کامنت را دارید
-import { IUser } from './User.model';
+import { IUser } from './user.model';
 import { IComment } from './Comment.model';
 
 export interface IProject extends Document {

@@ -3,7 +3,7 @@ import mongoose from 'mongoose';
 import bcrypt from 'bcryptjs';
 import jwt from 'jsonwebtoken';
 import { validationResult } from 'express-validator';
-import User from '../models/User.model';
+import User from '../models/user.model';
 import Profile from '../models/Profile.model';
 
 // --- کنترلر ثبت‌نام بازنویسی شده ---

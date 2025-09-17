@@ -2,7 +2,7 @@
 
 import { Request, Response } from 'express';
 import Team from '../models/Team.model';
-import User from '../models/User.model';
+import User from '../models/user.model';
 import mongoose from 'mongoose';
 import multer from 'multer';
 import path from 'path';

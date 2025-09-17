@@ -24,7 +24,7 @@ router.get('/:id', getAssociationById);
 router.post(
   '/',
   auth, // کاربر باید لاگین باشد
-  authorize(['admin', 'association_manager']), // کاربر باید نقش ادمین داشته باشد
+  authorize(['admin']), // کاربر باید نقش ادمین داشته باشد
   createAssociation,
 );
 router.put(

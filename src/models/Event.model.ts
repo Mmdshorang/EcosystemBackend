@@ -1,7 +1,7 @@
+// models/Event.model.ts
 import mongoose, { Document, Schema, Model } from 'mongoose';
-import { IComment } from './Comment.model'; // تایپ کامنت را وارد کنید
+import { IComment } from './Comment.model';
 
-// 1. فیلد کامنت‌ها را به اینترفیس اضافه کنید
 export interface IEvent extends Document {
   title: string;
   description: string;
@@ -9,9 +9,9 @@ export interface IEvent extends Document {
   type: 'Workshop' | 'Seminar' | 'Competition' | 'Announcement';
   date: Date;
   location?: string;
-  association: mongoose.Types.ObjectId;
+  association: mongoose.Types.ObjectId; // درست شد
   registeredUsers: mongoose.Types.ObjectId[];
-  comments: mongoose.Types.ObjectId[] | IComment[]; // <-- این خط اضافه شد
+  comments: mongoose.Types.ObjectId[] | IComment[];
   isArchived: boolean;
 }
 
@@ -26,11 +26,10 @@ const EventSchema: Schema<IEvent> = new Schema({
   },
   date: { type: Date, required: true },
   location: { type: String },
-  association: { type: mongoose.Schema.Types.ObjectId, ref: 'Association', required: true },
+  association: { type: mongoose.Schema.Types.ObjectId, ref: 'AssociationRequest', required: true }, // <- اصلاح شد
   registeredUsers: [{ type: mongoose.Schema.Types.ObjectId, ref: 'User' }],
   isArchived: { type: Boolean, default: false },
-  // ۲. فیلد کامنت‌ها را به اسکما اضافه کنید
-  comments: [{ type: mongoose.Schema.Types.ObjectId, ref: 'Comment' }] // <-- این خط اضافه شد
+  comments: [{ type: mongoose.Schema.Types.ObjectId, ref: 'Comment' }]
 }, { timestamps: true });
 
 const Event: Model<IEvent> = mongoose.model<IEvent>('Event', EventSchema);

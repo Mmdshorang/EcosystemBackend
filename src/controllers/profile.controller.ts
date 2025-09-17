@@ -3,7 +3,7 @@
 import { Request, Response } from 'express';
 import { validationResult } from 'express-validator';
 import Profile from '../models/Profile.model';
-import User from '../models/User.model';
+import User from '../models/user.model';
 import mongoose from 'mongoose';
 
 export interface UserPayload {

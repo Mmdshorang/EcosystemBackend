@@ -2,7 +2,7 @@
 
 import { Request, Response } from 'express';
 import mongoose from 'mongoose';
-import User, { IUser } from '../models/User.model'; // مسیر مدل خود را وارد کنید
+import User, { IUser } from '../models/user.model'; // مسیر مدل خود را وارد کنید
 import { UserPayload } from './profile.controller';
 import Project from '../models/Project.model';
 import Team from '../models/Team.model';

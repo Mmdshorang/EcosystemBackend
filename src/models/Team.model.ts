@@ -1,20 +1,16 @@
 import mongoose, { Document, Schema, Model } from 'mongoose';
 
-// Sub-document interfaces for better type safety
+// Sub-document interfaces
 interface ITeamMember {
   user: mongoose.Types.ObjectId;
   roleInTeam: string;
-}
-interface TeamLean {
-  _id: mongoose.Types.ObjectId;
-  name: string;
 }
 interface ITeamRating {
   user: mongoose.Types.ObjectId;
   score: number;
 }
 
-// 1. Define the main TypeScript Interface for the document
+// تیم اصلی
 export interface ITeam extends Document {
   name: string;
   description?: string;
@@ -24,10 +20,9 @@ export interface ITeam extends Document {
   projects: mongoose.Types.ObjectId[];
   pendingRequests: mongoose.Types.ObjectId[];
   ratings: ITeamRating[];
-  averageRating: number; // For the virtual property
+  averageRating: number;
 }
 
-// 2. Create the Schema
 const TeamSchema: Schema<ITeam> = new Schema({
   name: { type: String, required: true },
   description: { type: String },
@@ -49,20 +44,15 @@ const TeamSchema: Schema<ITeam> = new Schema({
   ]
 }, { timestamps: true });
 
-// Virtual property for average rating
-TeamSchema.virtual('averageRating').get(function(this: ITeam) {
-  if (!this.ratings || this.ratings.length === 0) {
-    return 0;
-  }
+// Virtual property → میانگین امتیاز
+TeamSchema.virtual('averageRating').get(function (this: ITeam) {
+  if (!this.ratings || this.ratings.length === 0) return 0;
   const sum = this.ratings.reduce((acc, rating) => acc + rating.score, 0);
   return parseFloat((sum / this.ratings.length).toFixed(1));
 });
 
-// Ensure virtuals are included in the output
 TeamSchema.set('toJSON', { virtuals: true });
 TeamSchema.set('toObject', { virtuals: true });
 
-// 3. Create and export the Model, linking it with the interface
 const Team: Model<ITeam> = mongoose.model<ITeam>('Team', TeamSchema);
-
 export default Team;
